@@ -5,17 +5,22 @@
     <title>Xenonの自己紹介ページ</title>
     <style>
         body { font-family: sans-serif; line-height: 1.6; max-width: 800px; margin: 0 auto; padding: 20px; }
-        header { text-align: center; padding: 50px 0; background: #d0d0d0; }
+        header { text-align: center; padding: 20px 0; background: #d0d0d0; }
         section { margin: 20px 0; }
+        /* sectionのh2で先頭に■を追加するやつ */
+        section h2::before {content: "■ ";}
         h1 {color: #404040;}
         h2 { border-bottom: 2px solid #909090; color: #5a5a5a;}
+        p { color: #404040;}
+        li { color: #404040;}
+        footer {font-size: 80%;}
     </style>
 </head>
 <body>
 
     <header>
         <h1>XenonKIGASU / キセノン貴ガス</h1>
-        <p>CS（サイバーセキュリティ）志望、大学でプログラミングを勉強中</p>
+        <p>CS(サイバーセキュリティ)志望、大学でプログラミングを勉強中</p>
     </header>
 
     <section id="about">
@@ -39,6 +44,10 @@
         <a href="https://x.com/_Xenon_131">X(Twitter)</a>
         <a href="https://github.com/XenonKIGASU"><br>Github</a>
     </section>
+
+    <footer>
+        <p style="color: #909090;">© 2026 hoge</p>
+    </footer>
 </body>
 
 </html>
