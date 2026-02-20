@@ -1,0 +1,40 @@
+body {
+  font-family: sans-serif;
+  line-height: 1.6;
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+}
+header {
+  text-align: center;
+  padding: 20px 0;
+  background: #d0d0d0;
+}
+section {
+  margin: 20px 0;
+}
+/* sectionのh2で先頭に■を追加するやつ */
+section h2::before {
+  content: "■ ";
+}
+h1 {
+  color: #404040;
+}
+h2 {
+  border-bottom: 2px solid #909090;
+  color: #5a5a5a;
+}
+p {
+  color: #404040;
+}
+li {
+  color: #404040;
+}
+a i {
+  color: #5a5a5a;
+  font-size: 250%;
+  margin-right: 15px;
+}
+footer {
+  font-size: 80%;
+}
