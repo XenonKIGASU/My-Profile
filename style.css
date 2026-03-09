@@ -4,11 +4,21 @@ body {
   max-width: 800px;
   margin: 0 auto;
   padding: 20px;
+  overflow: hidden;
+}
+canvas {
+  display: block;
+}
+#canvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: -1;
 }
 header {
   text-align: center;
   padding: 20px 0;
-  background: #d0d0d0;
+  background: #90909040;
 }
 section {
   margin: 20px 0;
