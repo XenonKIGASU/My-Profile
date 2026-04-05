@@ -1,0 +1,271 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, user-scalable=no"
+    />
+    <title>3DModelViewer</title>
+    <style>
+      body {
+        margin: 0;
+        overflow: hidden; /* スクロール禁止 */
+        background-color: #afafaf;
+        font-family: sans-serif;
+      }
+
+      /* UI部分 */
+      #ui-container {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        padding: 16px;
+        box-sizing: border-box;
+        background: linear-gradient(to bottom, rgb(129, 129, 129), transparent);
+        z-index: 10;
+      }
+
+      .file-input-wrapper {
+        position: relative;
+        width: 100%;
+      }
+
+      .btn {
+        display: block;
+        width: 100%;
+        padding: 14px 0;
+        background-color: #6e6e6e;
+        color: white;
+        text-align: center;
+        border-radius: 8px;
+        font-weight: bold;
+        pointer-events: none;
+      }
+
+      input[type="file"] {
+        position: absolute;
+        left: 0;
+        top: 0;
+        opacity: 0;
+        width: 100%;
+        height: 100%;
+        cursor: pointer;
+      }
+
+      #loading {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        color: white;
+        font-weight: bold;
+        display: none;
+        z-index: 20;
+      }
+
+      /* 3Dを描画するキャンバス */
+      #canvas-container {
+        width: 100vw;
+        height: 100vh;
+        display: block;
+      }
+    </style>
+
+    <!-- Three.jsと各種LoaderをCDNからインポートする魔法の設定 -->
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+          "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/",
+          "@pixiv/three-vrm": "https://unpkg.com/@pixiv/three-vrm@2.0.0/lib/three-vrm.module.js"
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <div id="ui-container">
+      <div class="file-input-wrapper">
+        <div class="btn">ファイルを選択 (GLB/STL/FBX/VRM)</div>
+        <input type="file" id="file-input" accept=".glb,.gltf,.stl,.fbx,.vrm" />
+      </div>
+    </div>
+
+    <div id="loading">読み込み中</div>
+    <div id="canvas-container"></div>
+
+    <script type="module">
+      import * as THREE from "three";
+      import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+      import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+      import { STLLoader } from "three/addons/loaders/STLLoader.js";
+      import { FBXLoader } from "three/addons/loaders/FBXLoader.js";
+      import { VRMLoaderPlugin } from "@pixiv/three-vrm";
+
+      // 1. 基本セットアップ（上：全体像）
+      const container = document.getElementById("canvas-container");
+      const loadingUI = document.getElementById("loading");
+
+      const scene = new THREE.Scene();
+      scene.background = new THREE.Color("#d0d0d0");
+
+      const camera = new THREE.PerspectiveCamera(
+        45,
+        window.innerWidth / window.innerHeight,
+        0.1,
+        1000,
+      );
+      camera.position.set(0, 1.5, 5);
+
+      const renderer = new THREE.WebGLRenderer({ antialias: true });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.setPixelRatio(window.devicePixelRatio); // スマホの網膜ディスプレイ対応
+      container.appendChild(renderer.domElement);
+
+      // 指で回せるようにする
+      const controls = new OrbitControls(camera, renderer.domElement);
+      controls.enableDamping = true;
+      controls.target.set(0, 1, 0);
+
+      // 光のセットアップ（これがないと真っ黒になる）
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+      scene.add(ambientLight);
+      const directionalLight = new THREE.DirectionalLight(0xffffff, 1.5);
+      directionalLight.position.set(5, 10, 5);
+      scene.add(directionalLight);
+
+      let currentModel = null;
+      let currentObjectUrl = null;
+
+      // 2. 毎フレーム描画するループ
+      function animate() {
+        requestAnimationFrame(animate);
+        controls.update();
+        renderer.render(scene, camera);
+      }
+      animate();
+
+      // 3. ファイル選択時のロジック（中：ロジックと分岐）
+      document
+        .getElementById("file-input")
+        .addEventListener("change", async (event) => {
+          const file = event.target.files[0];
+          if (!file) return;
+
+          loadingUI.style.display = "block";
+
+          // 前のモデルを消す
+          if (currentModel) {
+            scene.remove(currentModel);
+            currentModel = null;
+          }
+          if (currentObjectUrl) {
+            URL.revokeObjectURL(currentObjectUrl);
+          }
+
+          currentObjectUrl = URL.createObjectURL(file);
+          const extension = file.name.split(".").pop().toLowerCase();
+
+          try {
+            await loadModel(currentObjectUrl, extension);
+          } catch (error) {
+            console.error(error);
+            alert("エラー: 対応している形式か確認してください。");
+          } finally {
+            loadingUI.style.display = "none";
+          }
+        });
+
+      // 4. 拡張子に応じたLoader切り替え
+      function loadModel(url, ext) {
+        return new Promise((resolve, reject) => {
+          if (ext === "glb" || ext === "gltf") {
+            const loader = new GLTFLoader();
+            loader.load(
+              url,
+              (gltf) => {
+                currentModel = gltf.scene;
+                setupModel(currentModel);
+                resolve();
+              },
+              undefined,
+              reject,
+            );
+          } else if (ext === "vrm") {
+            const loader = new GLTFLoader();
+            loader.register((parser) => new VRMLoaderPlugin(parser));
+            loader.load(
+              url,
+              (gltf) => {
+                currentModel = gltf.scene;
+                // VRMは後ろを向いてることが多いので回転
+                currentModel.rotation.y = Math.PI;
+                setupModel(currentModel);
+                resolve();
+              },
+              undefined,
+              reject,
+            );
+          } else if (ext === "stl") {
+            const loader = new STLLoader();
+            loader.load(
+              url,
+              (geometry) => {
+                // STLは形だけのデータなので、適当な色(グレー)をつけてあげる
+                const material = new THREE.MeshStandardMaterial({
+                  color: 0xaaaaaa,
+                  roughness: 0.5,
+                });
+                currentModel = new THREE.Mesh(geometry, material);
+                setupModel(currentModel);
+                resolve();
+              },
+              undefined,
+              reject,
+            );
+          } else if (ext === "fbx") {
+            const loader = new FBXLoader();
+            loader.load(
+              url,
+              (object) => {
+                currentModel = object;
+                setupModel(currentModel);
+                resolve();
+              },
+              undefined,
+              reject,
+            );
+          } else {
+            reject(new Error("非対応のフォーマット"));
+          }
+        });
+      }
+
+      // 5. モデルの大きさと位置をイイ感じに自動調整する（下：UX）
+      function setupModel(model) {
+        // モデルのサイズを計算
+        const box = new THREE.Box3().setFromObject(model);
+        const size = box.getSize(new THREE.Vector3());
+        const center = box.getCenter(new THREE.Vector3());
+
+        // 大きすぎる/小さすぎるモデルを画面に収まるサイズに調整
+        const maxDim = Math.max(size.x, size.y, size.z);
+        const scale = 2.0 / maxDim; // 基準サイズを2.0くらいにする
+        model.scale.setScalar(scale);
+
+        // モデルを画面の真ん中に移動
+        model.position.sub(center.multiplyScalar(scale));
+
+        scene.add(model);
+      }
+
+      // 画面サイズ変更対応（スマホ縦横持ち替え）
+      window.addEventListener("resize", () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+      });
+    </script>
+  </body>
+</html>

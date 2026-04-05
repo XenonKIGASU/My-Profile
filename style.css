@@ -20,6 +20,17 @@ header {
   padding: 20px 0;
   background: #90909040;
 }
+#menu {
+  width: 100%;
+  table-layout: fixed;
+}
+#menu th {
+  height: 80%;
+  border-right: 2px solid #ccc;
+}
+#menu th:last-child {
+  border-right: none;
+}
 section {
   margin: 20px 0;
 }
@@ -33,6 +44,9 @@ h1 {
 h2 {
   border-bottom: 2px solid #909090;
   color: #5a5a5a;
+}
+th {
+  color: #404040;
 }
 p {
   color: #404040;
