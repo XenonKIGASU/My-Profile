@@ -198,7 +198,15 @@
             loader.load(
               url,
               (gltf) => {
-                currentModel = gltf.scene;
+                const vrm = gltf.userData.vrm;
+
+                // 【追加】VRMのおまじない（不要な頂点やジョイントを綺麗にする）
+                VRMUtils.removeUnnecessaryVertices(gltf.scene);
+                VRMUtils.removeUnnecessaryJoints(gltf.scene);
+
+                // 【修正】gltf.sceneじゃなくてvrm.sceneを使う
+                currentModel = vrm.scene;
+
                 // VRMは後ろを向いてることが多いので回転
                 currentModel.rotation.y = Math.PI;
                 setupModel(currentModel);
