@@ -31,6 +31,9 @@ header {
 #menu th:last-child {
   border-right: none;
 }
+#tools th {
+  padding: 10px;
+}
 section {
   margin: 20px 0;
 }
